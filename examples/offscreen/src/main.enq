@@ -1,0 +1,28 @@
+//! Render without a window toolkit or display server.
+import vulkan::{native_create, native_available, native_destroy, native_device_create, native_device_available, native_device_destroy, native_offscreen_create, native_swapchain_available, native_swapchain_clear, native_swapchain_wait, native_swapchain_destroy}
+
+fn main() -> u32 {
+    let context = native_create(false)
+    if !native_available(context) {
+        let _ = native_destroy(context)
+        ret 1_u32
+    }
+    let device = native_device_create(context, 0_usize)
+    if !native_device_available(device) {
+        let _ = native_device_destroy(device)
+        let _ = native_destroy(context)
+        ret 2_u32
+    }
+    let target = native_offscreen_create(device, 64_u32, 64_u32)
+    let rendered = native_swapchain_available(target) &&
+    native_swapchain_clear(target, 0.1_f32, 0.2_f32, 0.3_f32, 1.0_f32) &&
+    native_swapchain_wait(target)
+    let _ = native_swapchain_destroy(target)
+    let _ = native_device_destroy(device)
+    let _ = native_destroy(context)
+    ret if rendered {
+        0_u32
+    } else {
+        3_u32
+    }
+}

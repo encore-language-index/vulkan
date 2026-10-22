@@ -1,0 +1,1511 @@
+//! Vulkan resources, commands and externally managed presentation surfaces.
+import core::vec::Vec
+
+extern fn encore_vk_texture_borrow(device: usize, image: u64, width: u32, height: u32, format: u32, layout: u32) -> usize
+extern fn encore_vk_frame_sampled_color_barrier(frame: usize) -> bool
+
+/// Owns only a sampled view; the caller keeps the external image alive.
+pub fn native_texture_borrow(device: usize, image: u64, width: u32, height: u32, format: u32, layout: u32) -> usize {
+    unsafe {
+        ret encore_vk_texture_borrow(device, image, width, height, format, layout)
+    }
+}
+/// Orders earlier sampled-image reads before rendering into reused images.
+pub fn native_frame_sampled_color_barrier(frame: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_sampled_color_barrier(frame)
+    }
+}
+
+extern fn encore_vk_swapchain_wait(handle: usize) -> bool
+
+/// Waits for submitted frames before accessing offscreen readback pixels.
+pub fn native_swapchain_wait(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_wait(handle)
+    }
+}
+
+#attr(test)
+fn empty_vulkan_handles_are_unavailable() -> bool {
+    ret !native_available(0_usize) && !native_device_available(0_usize) &&
+    !native_surface_available(0_usize) && !native_swapchain_available(0_usize)
+}
+
+extern fn encore_vk_create_named_extensions(debug: bool, names: str*, count: usize) -> usize
+extern fn encore_vk_surface_borrow(context: usize, surface: u64, width: u32, height: u32) -> usize
+extern fn encore_vk_surface_resize(handle: usize, width: u32, height: u32) -> bool
+
+/// Creates an instance with the platform-required extension names, without loading a window toolkit.
+pub fn native_create_with_extensions(debug: bool, extensions: Vec[str]) -> usize {
+    unsafe {
+        ret encore_vk_create_named_extensions(debug, extensions.as_ptr(), extensions.len())
+    }
+}
+
+/// Borrows a VkSurfaceKHR. Destroy swapchains and this wrapper before destroying the external surface and instance.
+pub fn native_surface_borrow(context: usize, surface: u64, width: u32, height: u32) -> usize {
+    unsafe {
+        ret encore_vk_surface_borrow(context, surface, width, height)
+    }
+}
+
+/// Updates pixel dimensions after a platform resize event; zero dimensions represent a minimized surface.
+pub fn native_surface_resize(handle: usize, width: u32, height: u32) -> bool {
+    unsafe {
+        ret encore_vk_surface_resize(handle, width, height)
+    }
+}
+
+extern fn encore_vk_create(debug: bool) -> usize
+extern fn encore_vk_borrow(instance: usize, physical_device: usize) -> usize
+extern fn encore_vk_destroy(handle: usize) -> bool
+extern fn encore_vk_available(handle: usize) -> bool
+extern fn encore_vk_error(handle: usize) -> str
+extern fn encore_vk_api_version(handle: usize) -> u32
+extern fn encore_vk_instance(handle: usize) -> usize
+extern fn encore_vk_physical_device(handle: usize, index: usize) -> usize
+extern fn encore_vk_adapter_count(handle: usize) -> usize
+extern fn encore_vk_adapter_name(handle: usize, index: usize) -> str
+extern fn encore_vk_adapter_vendor(handle: usize, index: usize) -> u32
+extern fn encore_vk_adapter_device(handle: usize, index: usize) -> u32
+extern fn encore_vk_adapter_kind(handle: usize, index: usize) -> u32
+extern fn encore_vk_adapter_api_version(handle: usize, index: usize) -> u32
+extern fn encore_vk_adapter_tier(handle: usize, index: usize) -> u32
+extern fn encore_vk_adapter_ray_query(handle: usize, index: usize) -> bool
+extern fn encore_vk_adapter_ray_pipeline(handle: usize, index: usize) -> bool
+extern fn encore_vk_adapter_mesh_shader(handle: usize, index: usize) -> bool
+extern fn encore_vk_device_create(handle: usize, adapter_index: usize) -> usize
+extern fn encore_vk_device_create_features(handle: usize, adapter_index: usize,
+    required_features: u32, optional_features: u32,) -> usize
+extern fn encore_vk_device_borrow(handle: usize, device: usize, queue_family: u32) -> usize
+extern fn encore_vk_present_device_create(handle: usize, adapter_index: usize, window: usize) -> usize
+extern fn encore_vk_present_device_create_features(handle: usize,
+    adapter_index: usize, window: usize, required_features: u32,
+    optional_features: u32,) -> usize
+extern fn encore_vk_device_destroy(handle: usize) -> bool
+extern fn encore_vk_device_available(handle: usize) -> bool
+extern fn encore_vk_device_error(handle: usize) -> str
+extern fn encore_vk_device_queue_family(handle: usize) -> u32
+extern fn encore_vk_device_handle(handle: usize) -> usize
+extern fn encore_vk_device_graphics(handle: usize) -> bool
+extern fn encore_vk_device_compute(handle: usize) -> bool
+extern fn encore_vk_device_requested_features(handle: usize) -> u32
+extern fn encore_vk_device_enabled_features(handle: usize) -> u32
+extern fn encore_vk_shader_create(
+    device: usize, words: u32*, word_count: usize, stage: u32,) -> usize
+extern fn encore_vk_shader_available(handle: usize) -> bool
+extern fn encore_vk_shader_error(handle: usize) -> str
+extern fn encore_vk_shader_stage(handle: usize) -> u32
+extern fn encore_vk_shader_destroy(handle: usize) -> bool
+extern fn encore_vk_bind_group_layout_create(device: usize, binding: u32, stage: u32) -> usize
+extern fn encore_vk_bind_group_layout_create_entries(device: usize,
+    bindings: u32*, binding_count: usize,
+    types: u32*, type_count: usize,
+    stages: u32*, stage_count: usize,) -> usize
+extern fn encore_vk_bind_group_layout_available(handle: usize) -> bool
+extern fn encore_vk_bind_group_layout_error(handle: usize) -> str
+extern fn encore_vk_bind_group_layout_destroy(handle: usize) -> bool
+extern fn encore_vk_bind_group_create(device: usize, layout: usize, buffer: usize, offset: u64, range:
+    u64,) -> usize
+extern fn encore_vk_storage_bind_group_create(device: usize, layout: usize, buffer: usize, offset:
+    u64, range: u64,) -> usize
+extern fn encore_vk_storage_bind_group_create_many(device: usize, layout: usize,
+    bindings: u32*, binding_count: usize,
+    buffers: usize*, buffer_count: usize,
+    offsets: u64*, offset_count: usize,
+    ranges: u64*, range_count: usize,) -> usize
+extern fn encore_vk_buffer_bind_group_create_many(device: usize, layout: usize,
+    bindings: u32*, binding_count: usize,
+    buffers: usize*, buffer_count: usize,
+    offsets: u64*, offset_count: usize,
+    ranges: u64*, range_count: usize,) -> usize
+extern fn encore_vk_buffer_texture_bind_group_create_many(device: usize, layout: usize,
+    bindings: u32*, binding_count: usize,
+    buffers: usize*, buffer_count: usize,
+    offsets: u64*, offset_count: usize,
+    ranges: u64*, range_count: usize,
+    texture_binding: u32, texture: usize, sampler: usize,) -> usize
+extern fn encore_vk_ray_query_bind_group_create(device: usize, layout: usize,
+    acceleration_binding: u32, acceleration: usize,
+    bindings: u32*, binding_count: usize,
+    buffers: usize*, buffer_count: usize,
+    offsets: u64*, offset_count: usize,
+    ranges: u64*, range_count: usize,) -> usize
+extern fn encore_vk_buffer_textures_bind_group_create_many(device: usize, layout: usize,
+    bindings: u32*, binding_count: usize, buffers: usize*, buffer_count: usize,
+    offsets: u64*, offset_count: usize, ranges: u64*, range_count: usize,
+    texture_bindings: u32*, texture_binding_count: usize,
+    textures: usize*, texture_count: usize, samplers: usize*, sampler_count: usize,) -> usize
+extern fn encore_vk_bind_group_available(handle: usize) -> bool
+extern fn encore_vk_bind_group_error(handle: usize) -> str
+extern fn encore_vk_bind_group_destroy(handle: usize) -> bool
+extern fn encore_vk_bind_group_update_buffer(
+    handle: usize, binding: u32, buffer: usize,
+    offset: u64, range: u64,) -> bool
+extern fn encore_vk_sampler_create(device: usize) -> usize
+extern fn encore_vk_sampler_create_repeat(device: usize) -> usize
+extern fn encore_vk_sampler_available(handle: usize) -> bool
+extern fn encore_vk_sampler_error(handle: usize) -> str
+extern fn encore_vk_sampler_destroy(handle: usize) -> bool
+extern fn encore_vk_material_bind_group_create(device: usize, layout: usize, uniform_binding: u32,
+    buffer: usize, offset: u64, range: u64, texture_binding: u32, texture: usize, sampler: usize,) ->
+usize
+extern fn encore_vk_scene_bind_group_create(device: usize, layout: usize,
+    uniform_binding: u32, uniform_buffer: usize, uniform_range: u64,
+    storage_binding: u32, storage_buffer: usize, storage_range: u64,) -> usize
+extern fn encore_vk_pipeline_create(device: usize, swapchain: usize, vertex: usize, fragment: usize,
+    bind_group_layout: usize, depth_attachment: bool,
+    depth_test: bool, depth_write: bool,
+    cull_mode: u32, alpha_blend: bool,
+    additive_blend: bool,
+    load_color: bool,
+    vertex_stride: u32,
+    locations: u32*, location_count: usize,
+    formats: u32*, format_count: usize,
+    offsets: u32*, offset_count: usize,) -> usize
+extern fn encore_vk_pipeline_available(handle: usize) -> bool
+extern fn encore_vk_pipeline_error(handle: usize) -> str
+extern fn encore_vk_pipeline_destroy(handle: usize) -> bool
+extern fn encore_vk_compute_pipeline_create(device: usize, shader: usize, layout: usize) -> usize
+extern fn encore_vk_compute_pipeline_available(handle: usize) -> bool
+extern fn encore_vk_compute_pipeline_error(handle: usize) -> str
+extern fn encore_vk_compute_pipeline_destroy(handle: usize) -> bool
+extern fn encore_vk_encoder_create(device: usize) -> usize
+extern fn encore_vk_encoder_available(handle: usize) -> bool
+extern fn encore_vk_encoder_error(handle: usize) -> str
+extern fn encore_vk_encoder_submit_wait(handle: usize) -> bool
+extern fn encore_vk_encoder_destroy(handle: usize) -> bool
+extern fn encore_vk_encoder_submit(handle: usize) -> usize
+extern fn encore_vk_encoder_bind_compute_pipeline(encoder: usize, pipeline: usize) -> bool
+extern fn encore_vk_encoder_bind_compute_group(encoder: usize, pipeline: usize, group: usize) -> bool
+extern fn encore_vk_encoder_dispatch(encoder: usize, x: u32, y: u32, z: u32) -> bool
+extern fn encore_vk_encoder_storage_host_barrier(encoder: usize) -> bool
+extern fn encore_vk_encoder_transfer_host_barrier(encoder: usize) -> bool
+extern fn encore_vk_encoder_transfer_geometry_barrier(encoder: usize) -> bool
+extern fn encore_vk_encoder_copy_buffer(encoder: usize, source: usize, destination: usize,
+    source_offset: u64, destination_offset: u64, size: u64,) -> bool
+extern fn encore_vk_submission_complete(handle: usize) -> bool
+extern fn encore_vk_submission_available(handle: usize) -> bool
+extern fn encore_vk_submission_wait(handle: usize, timeout_ns: u64) -> bool
+extern fn encore_vk_submission_error(handle: usize) -> str
+extern fn encore_vk_submission_destroy(handle: usize) -> bool
+extern fn encore_vk_buffer_create(device: usize, size: u64, usage: u32, host_visible: bool) -> usize
+extern fn encore_vk_buffer_available(handle: usize) -> bool
+extern fn encore_vk_buffer_error(handle: usize) -> str
+extern fn encore_vk_buffer_size(handle: usize) -> u64
+extern fn encore_vk_buffer_host_visible(handle: usize) -> bool
+extern fn encore_vk_buffer_write_u32(handle: usize, offset: u64, value: u32) -> bool
+extern fn encore_vk_buffer_write_f32(handle: usize, offset: u64, value: f32) -> bool
+extern fn encore_vk_buffer_write_u32s(
+    handle: usize, offset: u64, values: u32*, count: usize,) -> bool
+extern fn encore_vk_buffer_write_f32s(
+    handle: usize, offset: u64, values: f32*, count: usize,) -> bool
+extern fn encore_vk_buffer_read_u32(handle: usize, offset: u64) -> u32
+extern fn encore_vk_buffer_read_f32(handle: usize, offset: u64) -> f32
+extern fn encore_vk_buffer_read_f32s(handle: usize, offset: u64, values: f32*, count: usize) -> bool
+extern fn encore_vk_buffer_destroy(handle: usize) -> bool
+extern fn encore_vk_blas_create_triangles(device: usize,
+    vertices: usize, vertex_stride: u64, vertex_count: u32,
+    indices: usize, index_count: u32,) -> usize
+extern fn encore_vk_tlas_create_instances(device: usize,
+    blas: usize*, blas_count: usize,
+    transforms: f32*, transform_count: usize,) -> usize
+extern fn encore_vk_acceleration_structure_available(handle: usize) -> bool
+extern fn encore_vk_acceleration_structure_error(handle: usize) -> str
+extern fn encore_vk_acceleration_structure_destroy(handle: usize) -> bool
+extern fn encore_vk_texture_create(device: usize, width: u32, height: u32, mip_levels: u32, format:
+    u32, usage: u32,) -> usize
+extern fn encore_vk_texture_available(handle: usize) -> bool
+extern fn encore_vk_texture_error(handle: usize) -> str
+extern fn encore_vk_texture_width(handle: usize) -> u32
+extern fn encore_vk_texture_height(handle: usize) -> u32
+extern fn encore_vk_texture_mip_levels(handle: usize) -> u32
+extern fn encore_vk_texture_format(handle: usize) -> u32
+extern fn encore_vk_texture_layout(handle: usize) -> u32
+extern fn encore_vk_texture_destroy(handle: usize) -> bool
+
+extern fn encore_vk_surface_available(handle: usize) -> bool
+extern fn encore_vk_surface_error(handle: usize) -> str
+
+extern fn encore_vk_surface_width(handle: usize) -> u32
+extern fn encore_vk_surface_height(handle: usize) -> u32
+
+extern fn encore_vk_surface_destroy(handle: usize) -> bool
+extern fn encore_vk_swapchain_create(device: usize, window: usize) -> usize
+extern fn encore_vk_offscreen_create(device: usize, width: u32, height: u32) -> usize
+extern fn encore_vk_shared_offscreen_create(device: usize, width: u32, height: u32) -> usize
+extern fn encore_vk_swapchain_available(handle: usize) -> bool
+extern fn encore_vk_swapchain_set_present_mode(handle: usize, immediate: bool) -> bool
+extern fn encore_vk_swapchain_error(handle: usize) -> str
+extern fn encore_vk_swapchain_width(handle: usize) -> u32
+extern fn encore_vk_swapchain_height(handle: usize) -> u32
+extern fn encore_vk_swapchain_frames_in_flight(handle: usize) -> u32
+extern fn encore_vk_swapchain_pixels(handle: usize) -> usize
+extern fn encore_vk_swapchain_pitch(handle: usize) -> u32
+extern fn encore_vk_swapchain_external_image(handle: usize) -> usize
+extern fn encore_vk_swapchain_external_layout(handle: usize) -> u32
+extern fn encore_vk_swapchain_clear(handle: usize, red: f32, green: f32, blue: f32, alpha: f32) ->
+bool
+extern fn encore_vk_swapchain_draw_pipeline(handle: usize, pipeline: usize, red: f32, green: f32, blue:
+    f32, alpha: f32,) -> bool
+extern fn encore_vk_swapchain_draw_indexed(handle: usize, pipeline: usize, vertex: usize, index: usize,
+    index_count: u32, red: f32, green: f32, blue: f32, alpha: f32,) -> bool
+extern fn encore_vk_swapchain_draw_indexed_bound(handle: usize, pipeline: usize, vertex: usize, index:
+    usize,
+    bind_group: usize, index_count: u32, red: f32, green: f32, blue: f32, alpha: f32,) -> bool
+extern fn encore_vk_swapchain_destroy(handle: usize) -> bool
+extern fn encore_vk_swapchain_last_frame_complete(handle: usize) -> bool
+extern fn encore_vk_swapchain_destroy_retired(handle: usize) -> bool
+extern fn encore_vk_frame_acquire(swapchain: usize) -> usize
+extern fn encore_vk_frame_try_acquire(swapchain: usize) -> usize
+extern fn encore_vk_frame_acquire_status(handle: usize) -> u32
+extern fn encore_vk_frame_constants(handle: usize, values: f32*, count: usize) -> bool
+extern fn encore_vk_frame_available(handle: usize) -> bool
+extern fn encore_vk_frame_slot(handle: usize) -> u32
+extern fn encore_vk_frame_error(handle: usize) -> str
+extern fn encore_vk_frame_begin_render_pass(handle: usize, pipeline: usize,
+    red: f32, green: f32, blue: f32, alpha: f32,) -> bool
+extern fn encore_vk_frame_dispatch_compute(handle: usize, pipeline: usize,
+    group: usize, x: u32, y: u32, z: u32,) -> bool
+extern fn encore_vk_frame_dispatch_compute_indirect(handle: usize, pipeline: usize,
+    group: usize, buffer: usize, offset: u64,) -> bool
+extern fn encore_vk_frame_compute_barrier(handle: usize) -> bool
+extern fn encore_vk_frame_fill_buffer(
+    handle: usize, buffer: usize, offset: u64, size: u64,
+    value: u32,) -> bool
+extern fn encore_vk_frame_transfer_storage_barrier(handle: usize) -> bool
+extern fn encore_vk_frame_fragment_storage_barrier(handle: usize) -> bool
+extern fn encore_vk_frame_copy_buffer(handle: usize, source: usize,
+    destination: usize, source_offset: u64, destination_offset: u64,
+    size: u64,) -> bool
+extern fn encore_vk_frame_bind_group(handle: usize, bind_group: usize) -> bool
+extern fn encore_vk_frame_bind_pipeline(handle: usize, pipeline: usize) -> bool
+extern fn encore_vk_frame_bind_vertex_buffer(handle: usize, buffer: usize) -> bool
+extern fn encore_vk_frame_bind_index_buffer(handle: usize, buffer: usize) -> bool
+extern fn encore_vk_frame_draw_indexed(handle: usize, index_count: u32, instance_count: u32,
+    first_index: u32, vertex_offset: i32, first_instance: u32,) -> bool
+extern fn encore_vk_frame_draw_indexed_indirect_count(handle: usize,
+    commands: usize, commands_offset: u64, count: usize, count_offset: u64,
+    maximum_draw_count: u32, stride: u32,) -> bool
+extern fn encore_vk_frame_draw_mesh_tasks(handle: usize,
+    group_count_x: u32, group_count_y: u32, group_count_z: u32,) -> bool
+extern fn encore_vk_frame_draw_mesh_tasks_indirect(handle: usize,
+    commands: usize, offset: u64,) -> bool
+extern fn encore_vk_frame_end_render_pass(handle: usize) -> bool
+extern fn encore_vk_frame_set_viewport(handle: usize, x: u32, y: u32, width: u32, height: u32) -> bool
+
+extern fn encore_vk_frame_present(handle: usize) -> bool
+// Out-of-date presentation returns false after rebuilding, and UI uploads validate surface size.
+extern fn encore_vk_frame_destroy(handle: usize) -> bool
+extern fn encore_vk_encoder_transition_texture(encoder: usize, texture: usize, new_layout: u32) ->
+bool
+extern fn encore_vk_encoder_copy_buffer_to_texture(encoder: usize, buffer: usize, texture: usize, width:
+    u32, height: u32, mip_level: u32,) -> bool
+
+pub fn native_create(debug: bool) -> usize {
+    unsafe {
+        ret encore_vk_create(debug)
+    }
+}
+pub fn native_borrow(instance: usize, physical_device: usize) -> usize {
+    unsafe {
+        ret encore_vk_borrow(instance, physical_device)
+    }
+}
+pub fn native_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_destroy(handle)
+    }
+}
+pub fn native_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_available(handle)
+    }
+}
+pub fn native_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_error(handle)
+    }
+}
+pub fn native_api_version(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_api_version(handle)
+    }
+}
+pub fn native_instance(handle: usize) -> usize {
+    unsafe {
+        ret encore_vk_instance(handle)
+    }
+}
+pub fn native_physical_device(handle: usize, index: usize) -> usize {
+    unsafe {
+        ret encore_vk_physical_device(handle, index)
+    }
+}
+pub fn native_adapter_count(handle: usize) -> usize {
+    unsafe {
+        ret encore_vk_adapter_count(handle)
+    }
+}
+pub fn native_adapter_name(handle: usize, index: usize) -> str {
+    unsafe {
+        ret encore_vk_adapter_name(handle, index)
+    }
+}
+pub fn native_adapter_vendor(handle: usize, index: usize) -> u32 {
+    unsafe {
+        ret encore_vk_adapter_vendor(handle, index)
+    }
+}
+pub fn native_adapter_device(handle: usize, index: usize) -> u32 {
+    unsafe {
+        ret encore_vk_adapter_device(handle, index)
+    }
+}
+pub fn native_adapter_kind(handle: usize, index: usize) -> u32 {
+    unsafe {
+        ret encore_vk_adapter_kind(handle, index)
+    }
+}
+pub fn native_adapter_api_version(handle: usize, index: usize) -> u32 {
+    unsafe {
+        ret encore_vk_adapter_api_version(handle, index)
+    }
+}
+pub fn native_adapter_tier(handle: usize, index: usize) -> u32 {
+    unsafe {
+        ret encore_vk_adapter_tier(handle, index)
+    }
+}
+pub fn native_adapter_ray_query(handle: usize, index: usize) -> bool {
+    unsafe {
+        ret encore_vk_adapter_ray_query(handle, index)
+    }
+}
+pub fn native_adapter_ray_pipeline(handle: usize, index: usize) -> bool {
+    unsafe {
+        ret encore_vk_adapter_ray_pipeline(handle, index)
+    }
+}
+pub fn native_adapter_mesh_shader(handle: usize, index: usize) -> bool {
+    unsafe {
+        ret encore_vk_adapter_mesh_shader(handle, index)
+    }
+}
+pub fn native_device_create(handle: usize, adapter_index: usize) -> usize {
+    unsafe {
+        ret encore_vk_device_create(handle, adapter_index)
+    }
+}
+pub fn native_device_create_features(handle: usize, adapter_index: usize,
+    required_features: u32, optional_features: u32,) -> usize {
+    unsafe {
+        ret encore_vk_device_create_features(handle, adapter_index,
+            required_features, optional_features,)
+    }
+}
+pub fn native_device_borrow(handle: usize, device: usize, queue_family: u32) -> usize {
+    unsafe {
+        ret encore_vk_device_borrow(handle, device, queue_family)
+    }
+}
+pub fn native_present_device_create(handle: usize, adapter_index: usize, window: usize) -> usize {
+    unsafe {
+        ret encore_vk_present_device_create(handle, adapter_index, window)
+    }
+}
+pub fn native_present_device_create_features(handle: usize,
+    adapter_index: usize, window: usize, required_features: u32,
+    optional_features: u32,) -> usize {
+    unsafe {
+        ret encore_vk_present_device_create_features(handle, adapter_index,
+            window, required_features, optional_features,)
+    }
+}
+pub fn native_device_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_device_destroy(handle)
+    }
+}
+pub fn native_device_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_device_available(handle)
+    }
+}
+pub fn native_device_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_device_error(handle)
+    }
+}
+pub fn native_device_queue_family(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_device_queue_family(handle)
+    }
+}
+pub fn native_device_handle(handle: usize) -> usize {
+    unsafe {
+        ret encore_vk_device_handle(handle)
+    }
+}
+pub fn native_device_graphics(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_device_graphics(handle)
+    }
+}
+pub fn native_device_compute(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_device_compute(handle)
+    }
+}
+pub fn native_device_requested_features(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_device_requested_features(handle)
+    }
+}
+pub fn native_device_enabled_features(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_device_enabled_features(handle)
+    }
+}
+pub fn native_shader_create(device: usize, words: Vec[u32], stage: u32) -> usize {
+    unsafe {
+        ret encore_vk_shader_create(device, words.as_ptr(), words.len(), stage)
+    }
+}
+pub fn native_shader_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_shader_available(handle)
+    }
+}
+pub fn native_shader_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_shader_error(handle)
+    }
+}
+pub fn native_shader_stage(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_shader_stage(handle)
+    }
+}
+pub fn native_shader_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_shader_destroy(handle)
+    }
+}
+pub fn native_bind_group_layout_create(device: usize, binding: u32, stage: u32) -> usize {
+    unsafe {
+        ret encore_vk_bind_group_layout_create(device, binding, stage)
+    }
+}
+pub fn native_bind_group_layout_create_entries(device: usize, bindings: Vec[u32], types: Vec[u32], stages:
+    Vec[u32],) -> usize {
+    unsafe {
+        ret encore_vk_bind_group_layout_create_entries(
+            device,
+            bindings.as_ptr(), bindings.len(),
+            types.as_ptr(), types.len(),
+            stages.as_ptr(), stages.len(),)
+    }
+}
+pub fn native_bind_group_layout_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_bind_group_layout_available(handle)
+    }
+}
+pub fn native_bind_group_layout_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_bind_group_layout_error(handle)
+    }
+}
+pub fn native_bind_group_layout_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_bind_group_layout_destroy(handle)
+    }
+}
+pub fn native_bind_group_create(device: usize, layout: usize, buffer: usize, offset: u64, range: u64)
+-> usize {
+    unsafe {
+        ret encore_vk_bind_group_create(device, layout, buffer, offset, range)
+    }
+}
+pub fn native_storage_bind_group_create(device: usize, layout: usize, buffer: usize, offset: u64, range:
+    u64,) -> usize {
+    unsafe {
+        ret encore_vk_storage_bind_group_create(device, layout, buffer, offset, range)
+    }
+}
+pub fn native_storage_bind_group_create_many(device: usize, layout: usize,
+    bindings: Vec[u32], buffers: Vec[usize], offsets: Vec[u64], ranges: Vec[u64],) -> usize {
+    unsafe {
+        ret encore_vk_storage_bind_group_create_many(
+            device, layout,
+            bindings.as_ptr(), bindings.len(),
+            buffers.as_ptr(), buffers.len(),
+            offsets.as_ptr(), offsets.len(),
+            ranges.as_ptr(), ranges.len(),)
+    }
+}
+pub fn native_buffer_bind_group_create_many(device: usize, layout: usize,
+    bindings: Vec[u32], buffers: Vec[usize], offsets: Vec[u64], ranges: Vec[u64],) -> usize {
+    unsafe {
+        ret encore_vk_buffer_bind_group_create_many(
+            device, layout,
+            bindings.as_ptr(), bindings.len(),
+            buffers.as_ptr(), buffers.len(),
+            offsets.as_ptr(), offsets.len(),
+            ranges.as_ptr(), ranges.len(),)
+    }
+}
+pub fn native_buffer_texture_bind_group_create_many(device: usize, layout: usize,
+    bindings: Vec[u32], buffers: Vec[usize], offsets: Vec[u64], ranges: Vec[u64],
+    texture_binding: u32, texture: usize, sampler: usize,) -> usize {
+    unsafe {
+        ret encore_vk_buffer_texture_bind_group_create_many(
+            device, layout,
+            bindings.as_ptr(), bindings.len(),
+            buffers.as_ptr(), buffers.len(),
+            offsets.as_ptr(), offsets.len(),
+            ranges.as_ptr(), ranges.len(),
+            texture_binding, texture, sampler,)
+    }
+}
+pub fn native_ray_query_bind_group_create(device: usize, layout: usize,
+    acceleration_binding: u32, acceleration: usize,
+    bindings: Vec[u32], buffers: Vec[usize], offsets: Vec[u64],
+    ranges: Vec[u64],) -> usize {
+    unsafe {
+        ret encore_vk_ray_query_bind_group_create(
+            device, layout, acceleration_binding, acceleration,
+            bindings.as_ptr(), bindings.len(),
+            buffers.as_ptr(), buffers.len(),
+            offsets.as_ptr(), offsets.len(),
+            ranges.as_ptr(), ranges.len(),)
+    }
+}
+
+/// Creates one immutable descriptor set with bounded buffer and sampled-image arrays.
+/// Handles must belong to this device and outlive the set and submitted frames.
+pub fn native_buffer_textures_bind_group_create_many(device: usize, layout: usize,
+    bindings: Vec[u32], buffers: Vec[usize], offsets: Vec[u64], ranges: Vec[u64],
+    texture_bindings: Vec[u32], textures: Vec[usize], samplers: Vec[usize],) -> usize {
+    unsafe {
+        ret encore_vk_buffer_textures_bind_group_create_many(device, layout,
+            bindings.as_ptr(), bindings.len(), buffers.as_ptr(), buffers.len(),
+            offsets.as_ptr(), offsets.len(), ranges.as_ptr(), ranges.len(),
+            texture_bindings.as_ptr(), texture_bindings.len(),
+            textures.as_ptr(), textures.len(), samplers.as_ptr(), samplers.len(),)
+    }
+}
+pub fn native_scene_bind_group_create(device: usize, layout: usize,
+    uniform_binding: u32, uniform_buffer: usize, uniform_range: u64,
+    storage_binding: u32, storage_buffer: usize, storage_range: u64,) -> usize {
+    unsafe {
+        ret encore_vk_scene_bind_group_create(device, layout, uniform_binding,
+            uniform_buffer, uniform_range, storage_binding, storage_buffer, storage_range,)
+    }
+}
+pub fn native_bind_group_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_bind_group_available(handle)
+    }
+}
+pub fn native_bind_group_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_bind_group_error(handle)
+    }
+}
+pub fn native_bind_group_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_bind_group_destroy(handle)
+    }
+}
+pub fn native_bind_group_update_buffer(
+    handle: usize, binding: u32, buffer: usize,
+    offset: u64, range: u64,) -> bool {
+    unsafe {
+        ret encore_vk_bind_group_update_buffer(
+            handle, binding, buffer, offset, range,)
+    }
+}
+pub fn native_sampler_create(device: usize) -> usize {
+    unsafe {
+        ret encore_vk_sampler_create(device)
+    }
+}
+pub fn native_sampler_create_repeat(device: usize) -> usize {
+    unsafe {
+        ret encore_vk_sampler_create_repeat(device)
+    }
+}
+pub fn native_sampler_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_sampler_available(handle)
+    }
+}
+pub fn native_sampler_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_sampler_error(handle)
+    }
+}
+pub fn native_sampler_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_sampler_destroy(handle)
+    }
+}
+pub fn native_material_bind_group_create(device: usize, layout: usize, uniform_binding: u32,
+    buffer: usize, offset: u64, range: u64, texture_binding: u32, texture: usize, sampler: usize,) ->
+usize {
+    unsafe {
+        ret encore_vk_material_bind_group_create(device, layout, uniform_binding, buffer, offset,
+            range, texture_binding, texture, sampler,)
+    }
+}
+pub fn native_pipeline_create(device: usize, swapchain: usize, vertex: usize, fragment: usize,
+    bind_group_layout: usize, depth_test: bool, cull_mode: u32, alpha_blend: bool,
+    vertex_stride: u32, locations: Vec[u32], formats: Vec[u32], offsets: Vec[u32],) -> usize {
+    unsafe {
+        ret encore_vk_pipeline_create(device, swapchain, vertex, fragment, bind_group_layout,
+            depth_test, depth_test, depth_test,
+            cull_mode, alpha_blend, false, false,
+            vertex_stride,
+            locations.as_ptr(), locations.len(),
+            formats.as_ptr(), formats.len(),
+            offsets.as_ptr(), offsets.len(),)
+    }
+}
+pub fn native_pipeline_create_depth_state(
+    device: usize, swapchain: usize, vertex: usize, fragment: usize,
+    bind_group_layout: usize, depth_attachment: bool,
+    depth_test: bool, depth_write: bool,
+    cull_mode: u32, alpha_blend: bool,
+    vertex_stride: u32, locations: Vec[u32], formats: Vec[u32],
+    offsets: Vec[u32],) -> usize {
+    unsafe {
+        ret encore_vk_pipeline_create(
+            device, swapchain, vertex, fragment, bind_group_layout,
+            depth_attachment, depth_test, depth_write,
+            cull_mode, alpha_blend, false, false,
+            vertex_stride,
+            locations.as_ptr(), locations.len(),
+            formats.as_ptr(), formats.len(),
+            offsets.as_ptr(), offsets.len(),)
+    }
+}
+pub fn native_pipeline_create_configured(
+    device: usize, swapchain: usize, vertex: usize, fragment: usize,
+    bind_group_layout: usize, depth_attachment: bool,
+    depth_test: bool, depth_write: bool,
+    cull_mode: u32, alpha_blend: bool, additive_blend: bool,
+    load_color: bool,
+    vertex_stride: u32, locations: Vec[u32], formats: Vec[u32],
+    offsets: Vec[u32],) -> usize {
+    unsafe {
+        ret encore_vk_pipeline_create(
+            device, swapchain, vertex, fragment, bind_group_layout,
+            depth_attachment, depth_test, depth_write,
+            cull_mode, alpha_blend, additive_blend, load_color,
+            vertex_stride,
+            locations.as_ptr(), locations.len(),
+            formats.as_ptr(), formats.len(),
+            offsets.as_ptr(), offsets.len(),)
+    }
+}
+pub fn native_pipeline_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_pipeline_available(handle)
+    }
+}
+pub fn native_pipeline_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_pipeline_error(handle)
+    }
+}
+pub fn native_pipeline_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_pipeline_destroy(handle)
+    }
+}
+pub fn native_compute_pipeline_create(device: usize, shader: usize, layout: usize) -> usize {
+    unsafe {
+        ret encore_vk_compute_pipeline_create(device, shader, layout)
+    }
+}
+pub fn native_compute_pipeline_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_compute_pipeline_available(handle)
+    }
+}
+pub fn native_compute_pipeline_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_compute_pipeline_error(handle)
+    }
+}
+pub fn native_compute_pipeline_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_compute_pipeline_destroy(handle)
+    }
+}
+pub fn native_encoder_create(device: usize) -> usize {
+    unsafe {
+        ret encore_vk_encoder_create(device)
+    }
+}
+pub fn native_encoder_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_available(handle)
+    }
+}
+pub fn native_encoder_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_encoder_error(handle)
+    }
+}
+pub fn native_encoder_submit_wait(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_submit_wait(handle)
+    }
+}
+pub fn native_encoder_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_destroy(handle)
+    }
+}
+pub fn native_encoder_submit(handle: usize) -> usize {
+    unsafe {
+        ret encore_vk_encoder_submit(handle)
+    }
+}
+pub fn native_encoder_bind_compute_pipeline(encoder: usize, pipeline: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_bind_compute_pipeline(encoder, pipeline)
+    }
+}
+pub fn native_encoder_bind_compute_group(encoder: usize, pipeline: usize, group: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_bind_compute_group(encoder, pipeline, group)
+    }
+}
+pub fn native_encoder_dispatch(encoder: usize, x: u32, y: u32, z: u32) -> bool {
+    unsafe {
+        ret encore_vk_encoder_dispatch(encoder, x, y, z)
+    }
+}
+pub fn native_encoder_storage_host_barrier(encoder: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_storage_host_barrier(encoder)
+    }
+}
+pub fn native_encoder_transfer_host_barrier(encoder: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_transfer_host_barrier(encoder)
+    }
+}
+pub fn native_encoder_transfer_geometry_barrier(encoder: usize) -> bool {
+    unsafe {
+        ret encore_vk_encoder_transfer_geometry_barrier(encoder)
+    }
+}
+pub fn native_encoder_copy_buffer(encoder: usize, source: usize, destination: usize,
+    source_offset: u64, destination_offset: u64, size: u64,) -> bool {
+    unsafe {
+        ret encore_vk_encoder_copy_buffer(encoder, source, destination, source_offset, destination_offset,
+            size,)
+    }
+}
+pub fn native_submission_complete(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_submission_complete(handle)
+    }
+}
+pub fn native_submission_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_submission_available(handle)
+    }
+}
+pub fn native_submission_wait(handle: usize, timeout_ns: u64) -> bool {
+    unsafe {
+        ret encore_vk_submission_wait(handle, timeout_ns)
+    }
+}
+pub fn native_submission_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_submission_error(handle)
+    }
+}
+pub fn native_submission_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_submission_destroy(handle)
+    }
+}
+pub fn native_buffer_create(device: usize, size: u64, usage: u32, host_visible: bool) -> usize {
+    unsafe {
+        ret encore_vk_buffer_create(device, size, usage, host_visible)
+    }
+}
+pub fn native_buffer_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_buffer_available(handle)
+    }
+}
+pub fn native_buffer_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_buffer_error(handle)
+    }
+}
+pub fn native_buffer_size(handle: usize) -> u64 {
+    unsafe {
+        ret encore_vk_buffer_size(handle)
+    }
+}
+pub fn native_buffer_host_visible(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_buffer_host_visible(handle)
+    }
+}
+pub fn native_buffer_write_u32(handle: usize, offset: u64, value: u32) -> bool {
+    unsafe {
+        ret encore_vk_buffer_write_u32(handle, offset, value)
+    }
+}
+pub fn native_buffer_write_f32(handle: usize, offset: u64, value: f32) -> bool {
+    unsafe {
+        ret encore_vk_buffer_write_f32(handle, offset, value)
+    }
+}
+pub fn native_buffer_write_u32s(handle: usize, offset: u64, values: Vec[u32]) -> bool {
+    unsafe {
+        ret encore_vk_buffer_write_u32s(
+            handle, offset, values.as_ptr(), values.len(),)
+    }
+}
+pub fn native_buffer_write_f32s(handle: usize, offset: u64, values: Vec[f32]) -> bool {
+    unsafe {
+        ret encore_vk_buffer_write_f32s(
+            handle, offset, values.as_ptr(), values.len(),)
+    }
+}
+pub fn native_buffer_read_u32(handle: usize, offset: u64) -> u32 {
+    unsafe {
+        ret encore_vk_buffer_read_u32(handle, offset)
+    }
+}
+pub fn native_buffer_read_f32(handle: usize, offset: u64) -> f32 {
+    unsafe {
+        ret encore_vk_buffer_read_f32(handle, offset)
+    }
+}
+/// Copies a completed host-visible range. The caller owns GPU completion ordering.
+#attr(safe)
+pub fn native_buffer_read_f32s(handle: usize, offset: u64, count: usize) -> Vec[f32] {
+    if count > 67108864_usize {
+        ret Vec[f32]::new()
+    }
+    let mut values = Vec[f32]::with_capacity(count)
+    for _index in 0_usize..count {
+        values.push(0)
+    }
+    unsafe {
+        if !encore_vk_buffer_read_f32s(handle, offset, values.as_ptr(), count) {
+            values.clear()
+        }
+    }
+    ret values
+}
+pub fn native_buffer_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_buffer_destroy(handle)
+    }
+}
+pub fn native_blas_create_triangles(device: usize,
+    vertices: usize, vertex_stride: u64, vertex_count: u32,
+    indices: usize, index_count: u32,) -> usize {
+    unsafe {
+        ret encore_vk_blas_create_triangles(device, vertices,
+            vertex_stride, vertex_count, indices, index_count,)
+    }
+}
+pub fn native_tlas_create_instances(device: usize,
+    blas: Vec[usize], transforms: Vec[f32],) -> usize {
+    unsafe {
+        ret encore_vk_tlas_create_instances(
+            device, blas.as_ptr(), blas.len(),
+            transforms.as_ptr(), transforms.len(),)
+    }
+}
+pub fn native_acceleration_structure_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_acceleration_structure_available(handle)
+    }
+}
+pub fn native_acceleration_structure_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_acceleration_structure_error(handle)
+    }
+}
+pub fn native_acceleration_structure_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_acceleration_structure_destroy(handle)
+    }
+}
+pub fn native_texture_create(device: usize, width: u32, height: u32, mip_levels: u32, format: u32, usage:
+    u32,) -> usize {
+    unsafe {
+        ret encore_vk_texture_create(device, width, height, mip_levels, format, usage)
+    }
+}
+pub fn native_texture_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_texture_available(handle)
+    }
+}
+pub fn native_texture_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_texture_error(handle)
+    }
+}
+pub fn native_texture_width(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_texture_width(handle)
+    }
+}
+pub fn native_texture_height(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_texture_height(handle)
+    }
+}
+pub fn native_texture_mip_levels(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_texture_mip_levels(handle)
+    }
+}
+pub fn native_texture_format(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_texture_format(handle)
+    }
+}
+pub fn native_texture_layout(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_texture_layout(handle)
+    }
+}
+pub fn native_texture_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_texture_destroy(handle)
+    }
+}
+
+pub fn native_surface_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_surface_available(handle)
+    }
+}
+pub fn native_surface_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_surface_error(handle)
+    }
+}
+
+pub fn native_surface_width(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_surface_width(handle)
+    }
+}
+pub fn native_surface_height(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_surface_height(handle)
+    }
+}
+
+pub fn native_surface_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_surface_destroy(handle)
+    }
+}
+pub fn native_swapchain_create(device: usize, window: usize) -> usize {
+    unsafe {
+        ret encore_vk_swapchain_create(device, window)
+    }
+}
+pub fn native_offscreen_create(device: usize, width: u32, height: u32) -> usize {
+    unsafe {
+        ret encore_vk_offscreen_create(device, width, height)
+    }
+}
+pub fn native_shared_offscreen_create(device: usize, width: u32, height: u32) -> usize {
+    unsafe {
+        ret encore_vk_shared_offscreen_create(device, width, height)
+    }
+}
+pub fn native_swapchain_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_available(handle)
+    }
+}
+pub fn native_swapchain_set_present_mode(handle: usize, immediate: bool) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_set_present_mode(handle, immediate)
+    }
+}
+pub fn native_swapchain_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_swapchain_error(handle)
+    }
+}
+pub fn native_swapchain_width(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_swapchain_width(handle)
+    }
+}
+pub fn native_swapchain_height(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_swapchain_height(handle)
+    }
+}
+pub fn native_swapchain_frames_in_flight(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_swapchain_frames_in_flight(handle)
+    }
+}
+pub fn native_swapchain_pixels(handle: usize) -> usize {
+    unsafe {
+        ret encore_vk_swapchain_pixels(handle)
+    }
+}
+pub fn native_swapchain_pitch(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_swapchain_pitch(handle)
+    }
+}
+pub fn native_swapchain_external_image(handle: usize) -> usize {
+    unsafe {
+        ret encore_vk_swapchain_external_image(handle)
+    }
+}
+pub fn native_swapchain_external_layout(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_swapchain_external_layout(handle)
+    }
+}
+pub fn native_swapchain_clear(handle: usize, red: f32, green: f32, blue: f32, alpha: f32) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_clear(handle, red, green, blue, alpha)
+    }
+}
+pub fn native_swapchain_draw_pipeline(handle: usize, pipeline: usize, red: f32, green: f32, blue: f32,
+    alpha: f32,) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_draw_pipeline(handle, pipeline, red, green, blue, alpha)
+    }
+}
+pub fn native_swapchain_draw_indexed(handle: usize, pipeline: usize, vertex: usize, index: usize,
+    index_count: u32, red: f32, green: f32, blue: f32, alpha: f32,) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_draw_indexed(handle, pipeline, vertex, index, index_count, red, green,
+            blue, alpha,)
+    }
+}
+pub fn native_swapchain_draw_indexed_bound(handle: usize, pipeline: usize, vertex: usize, index: usize,
+    bind_group: usize, index_count: u32, red: f32, green: f32, blue: f32, alpha: f32,) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_draw_indexed_bound(handle, pipeline, vertex, index, bind_group,
+            index_count, red, green, blue, alpha,)
+    }
+}
+pub fn native_swapchain_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_destroy(handle)
+    }
+}
+pub fn native_swapchain_last_frame_complete(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_last_frame_complete(handle)
+    }
+}
+pub fn native_swapchain_destroy_retired(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_destroy_retired(handle)
+    }
+}
+pub fn native_frame_acquire(swapchain: usize) -> usize {
+    unsafe {
+        ret encore_vk_frame_acquire(swapchain)
+    }
+}
+pub fn native_frame_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_available(handle)
+    }
+}
+/// Attempts acquisition without waiting. Destroy the returned handle even
+/// when its status is pending or suspended; only ready owns a frame image.
+pub fn native_frame_try_acquire(swapchain: usize) -> usize {
+    unsafe {
+        ret encore_vk_frame_try_acquire(swapchain)
+    }
+}
+/// Returns failed=0, ready=1, pending=2 or suspended=3.
+pub fn native_frame_acquire_status(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_frame_acquire_status(handle)
+    }
+}
+/// Writes up to 32 floats to the common graphics push-constant range.
+pub fn native_frame_constants(handle: usize, values: Vec[f32]) -> bool {
+    unsafe {
+        ret encore_vk_frame_constants(handle, values.as_ptr(), values.len())
+    }
+}
+pub fn native_frame_slot(handle: usize) -> u32 {
+    unsafe {
+        ret encore_vk_frame_slot(handle)
+    }
+}
+pub fn native_frame_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_frame_error(handle)
+    }
+}
+pub fn native_frame_begin_render_pass(handle: usize, pipeline: usize,
+    red: f32, green: f32, blue: f32, alpha: f32,) -> bool {
+    unsafe {
+        ret encore_vk_frame_begin_render_pass(handle, pipeline, red, green, blue, alpha)
+    }
+}
+pub fn native_frame_dispatch_compute(handle: usize, pipeline: usize,
+    group: usize, x: u32, y: u32, z: u32,) -> bool {
+    unsafe {
+        ret encore_vk_frame_dispatch_compute(handle, pipeline, group, x, y, z)
+    }
+}
+/// Dispatches compute using a GPU-generated argument buffer after an indirect-read barrier.
+pub fn native_frame_dispatch_compute_indirect(handle: usize, pipeline: usize,
+    group: usize, buffer: usize, offset: u64,) -> bool {
+    unsafe {
+        ret encore_vk_frame_dispatch_compute_indirect(handle, pipeline, group, buffer, offset)
+    }
+}
+pub fn native_frame_compute_barrier(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_compute_barrier(handle)
+    }
+}
+pub fn native_frame_fill_buffer(
+    handle: usize, buffer: usize, offset: u64, size: u64,
+    value: u32,) -> bool {
+    unsafe {
+        ret encore_vk_frame_fill_buffer(
+            handle, buffer, offset, size, value,)
+    }
+}
+pub fn native_frame_transfer_storage_barrier(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_transfer_storage_barrier(handle)
+    }
+}
+pub fn native_frame_fragment_storage_barrier(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_fragment_storage_barrier(handle)
+    }
+}
+pub fn native_frame_copy_buffer(handle: usize, source: usize,
+    destination: usize, source_offset: u64, destination_offset: u64,
+    size: u64,) -> bool {
+    unsafe {
+        ret encore_vk_frame_copy_buffer(handle, source, destination,
+            source_offset, destination_offset, size,)
+    }
+}
+pub fn native_frame_bind_group(handle: usize, bind_group: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_bind_group(handle, bind_group)
+    }
+}
+pub fn native_frame_bind_pipeline(handle: usize, pipeline: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_bind_pipeline(handle, pipeline)
+    }
+}
+pub fn native_frame_bind_vertex_buffer(handle: usize, buffer: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_bind_vertex_buffer(handle, buffer)
+    }
+}
+pub fn native_frame_bind_index_buffer(handle: usize, buffer: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_bind_index_buffer(handle, buffer)
+    }
+}
+pub fn native_frame_draw_indexed(handle: usize, index_count: u32, instance_count: u32,
+    first_index: u32, vertex_offset: i32, first_instance: u32,) -> bool {
+    unsafe {
+        ret encore_vk_frame_draw_indexed(handle, index_count, instance_count, first_index, vertex_offset,
+            first_instance,)
+    }
+}
+pub fn native_frame_draw_indexed_indirect_count(handle: usize,
+    commands: usize, commands_offset: u64, count: usize, count_offset: u64,
+    maximum_draw_count: u32, stride: u32,) -> bool {
+    unsafe {
+        ret encore_vk_frame_draw_indexed_indirect_count(handle,
+            commands, commands_offset, count, count_offset,
+            maximum_draw_count, stride,)
+    }
+}
+pub fn native_frame_draw_mesh_tasks(handle: usize,
+    group_count_x: u32, group_count_y: u32, group_count_z: u32,) -> bool {
+    unsafe {
+        ret encore_vk_frame_draw_mesh_tasks(handle,
+            group_count_x, group_count_y, group_count_z,)
+    }
+}
+pub fn native_frame_draw_mesh_tasks_indirect(handle: usize,
+    commands: usize, offset: u64,) -> bool {
+    unsafe {
+        ret encore_vk_frame_draw_mesh_tasks_indirect(
+            handle, commands, offset,)
+    }
+}
+pub fn native_frame_end_render_pass(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_end_render_pass(handle)
+    }
+}
+pub fn native_frame_set_viewport(handle: usize, x: u32, y: u32, width: u32, height: u32) -> bool {
+    unsafe {
+        ret encore_vk_frame_set_viewport(handle, x, y, width, height)
+    }
+}
+
+pub fn native_frame_present(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_present(handle)
+    }
+}
+pub fn native_frame_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_destroy(handle)
+    }
+}
+pub fn native_encoder_transition_texture(encoder: usize, texture: usize, new_layout: u32) -> bool {
+    unsafe {
+        ret encore_vk_encoder_transition_texture(encoder, texture, new_layout)
+    }
+}
+pub fn native_encoder_copy_buffer_to_texture(encoder: usize, buffer: usize, texture: usize, width: u32,
+    height: u32, mip_level: u32,) -> bool {
+    unsafe {
+        ret encore_vk_encoder_copy_buffer_to_texture(encoder, buffer, texture, width, height, mip_level)
+    }
+}
+
+extern fn encore_vk_target_sample_counts(device: usize, format: u32) -> u32
+extern fn encore_vk_render_target_create(device: usize, width: u32, height: u32, format: u32, samples: u32, auxiliary_format: u32, sampled_depth: bool) -> usize
+extern fn encore_vk_target_attachment(target: usize, attachment: u32) -> usize
+extern fn encore_vk_target_render_signature(target: usize) -> u64
+pub fn native_target_render_signature(target: usize) -> u64 {
+    unsafe {
+        ret encore_vk_target_render_signature(target)
+    }
+}
+pub fn native_target_sample_counts(device: usize, format: u32) -> u32 {
+    unsafe {
+        ret encore_vk_target_sample_counts(device, format)
+    }
+}
+pub fn native_render_target_create(device: usize, width: u32, height: u32, format: u32, samples: u32, auxiliary_format: u32, sampled_depth: bool) -> usize {
+    unsafe {
+        ret encore_vk_render_target_create(device, width, height, format, samples, auxiliary_format, sampled_depth)
+    }
+}
+pub fn native_target_attachment(target: usize, attachment: u32) -> usize {
+    unsafe {
+        ret encore_vk_target_attachment(target, attachment)
+    }
+}
+
+extern fn encore_vk_target_memory_bytes(target: usize) -> u64
+pub fn native_target_memory_bytes(target: usize) -> u64 {
+    unsafe {
+        ret encore_vk_target_memory_bytes(target)
+    }
+}
+
+// Optional per-device GPU timestamp stream. Labels are application-defined.
+extern fn encore_vk_timing_support(device: usize) -> u32
+extern fn encore_vk_timing_begin(device: usize, frame_id: u64) -> bool
+extern fn encore_vk_timing_finish(device: usize, valid: bool) ->()
+extern fn encore_vk_timing_poll(device: usize) -> u64
+extern fn encore_vk_timing_value(device: usize, event: u32, field: u32) -> u64
+extern fn encore_vk_timing_release(device: usize) ->()
+extern fn encore_vk_frame_timing_mark(frame: usize, label: u32, begin: bool) ->()
+pub fn native_frame_timing_mark(frame: usize, label: u32, begin: bool) ->() {
+    unsafe {
+        encore_vk_frame_timing_mark(frame, label, begin)
+    }
+}
+pub fn native_timing_support(device: usize) -> u32 {
+    unsafe {
+        ret encore_vk_timing_support(device)
+    }
+}
+pub fn native_timing_begin(device: usize, frame_id: u64) -> bool {
+    unsafe {
+        ret encore_vk_timing_begin(device, frame_id)
+    }
+}
+pub fn native_timing_finish(device: usize, valid: bool) ->() {
+    unsafe {
+        encore_vk_timing_finish(device, valid)
+    }
+}
+pub fn native_timing_poll(device: usize) -> u64 {
+    unsafe {
+        ret encore_vk_timing_poll(device)
+    }
+}
+pub fn native_timing_value(device: usize, event: u32, field: u32) -> u64 {
+    unsafe {
+        ret encore_vk_timing_value(device, event, field)
+    }
+}
+pub fn native_timing_release(device: usize) ->() {
+    unsafe {
+        encore_vk_timing_release(device)
+    }
+}
+
+extern fn encore_vk_parallel_configure(workers: u32) -> bool
+extern fn encore_vk_parallel_stat(device: usize, index: u32) -> u64
+
+/// Configures CPU recording workers and a queue-owner thread for subsequently created devices.
+/// Call before creating windows/devices; zero preserves synchronous execution.
+pub fn native_parallel_configure(workers: u32) -> bool {
+    unsafe {
+        ret encore_vk_parallel_configure(workers)
+    }
+}
+/// Cumulative backend counters: workers, recording ns, submission ns, packets, bytes, error.
+pub fn native_parallel_stat(device: usize, index: u32) -> u64 {
+    unsafe {
+        ret encore_vk_parallel_stat(device, index)
+    }
+}
+
+extern fn encore_vk_swapchain_frame_ready(handle: usize) -> bool
+/// Polls completion of the next frame slot without acquiring or waiting.
+pub fn native_swapchain_frame_ready(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_swapchain_frame_ready(handle)
+    }
+}
+
+extern fn encore_vk_frame_update_f32s(frame: usize, buffer: usize, offset: u64, values: f32*, count: usize) -> bool
+/// Copies owned command data into GPU storage in queue order; large spans are chunked.
+pub fn native_frame_update_f32s(frame: usize, buffer: usize, offset: u64, values: Vec[f32]) -> bool {
+    unsafe {
+        ret encore_vk_frame_update_f32s(frame, buffer, offset, values.as_ptr(), values.len())
+    }
+}
+
+extern fn encore_vk_device_independent_blend(handle: usize) -> bool
+pub fn native_device_independent_blend(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_device_independent_blend(handle)
+    }
+}
+
+extern fn encore_vk_frame_completion(frame: usize) -> usize
+extern fn encore_vk_completion_clone(completion: usize) -> usize
+extern fn encore_vk_completion_destroy(completion: usize) -> bool
+extern fn encore_vk_completion_status(completion: usize) -> u32
+/// Retained completion record; destroy each returned reference exactly once.
+pub fn native_frame_completion(frame: usize) -> usize {
+    ret encore_vk_frame_completion(frame)
+}
+pub fn native_completion_clone(completion: usize) -> usize {
+    ret encore_vk_completion_clone(completion)
+}
+pub fn native_completion_destroy(completion: usize) -> bool {
+    ret encore_vk_completion_destroy(completion)
+}
+/// 0 invalid, 1 pending, 2 complete, 3 cancelled, 4 fault (retain and retry).
+pub fn native_completion_status(completion: usize) -> u32 {
+    ret encore_vk_completion_status(completion)
+}
+
+extern fn encore_vk_frame_update_u32s(frame: usize, buffer: usize, offset: u64, values: u32*, count: usize) -> bool
+pub fn native_frame_update_u32s(frame: usize, buffer: usize, offset: u64, values: Vec[u32]) -> bool {
+    ret encore_vk_frame_update_u32s(frame, buffer, offset, values.as_ptr(), values.len())
+}
+
+extern fn encore_vk_completion_submitted(completion: usize) -> bool
+/// True after queue submission, including completed records; false while recording/cancelled.
+pub fn native_completion_submitted(completion: usize) -> bool {
+    ret encore_vk_completion_submitted(completion)
+}
+
+// Optional temporal reconstruction providers. All handles are device-local.
+extern fn encore_vk_reconstruction_capabilities(device: usize) -> u32
+extern fn encore_vk_reconstruction_create(device: usize, method: u32, iw: u32, ih: u32, ow: u32, oh: u32, quality: u32) -> usize
+extern fn encore_vk_reconstruction_available(handle: usize) -> bool
+extern fn encore_vk_reconstruction_error(handle: usize) -> str
+extern fn encore_vk_reconstruction_record(handle: usize, frame: usize, source: usize, output: usize, values: f32*, count: usize) -> bool
+extern fn encore_vk_reconstruction_destroy(handle: usize) -> bool
+pub fn native_reconstruction_capabilities(device: usize) -> u32 {
+    unsafe {
+        ret encore_vk_reconstruction_capabilities(device)
+    }
+}
+pub fn native_reconstruction_create(device: usize, method: u32, iw: u32, ih: u32, ow: u32, oh: u32, quality: u32) -> usize {
+    unsafe {
+        ret encore_vk_reconstruction_create(device, method, iw, ih, ow, oh, quality)
+    }
+}
+pub fn native_reconstruction_available(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_reconstruction_available(handle)
+    }
+}
+pub fn native_reconstruction_error(handle: usize) -> str {
+    unsafe {
+        ret encore_vk_reconstruction_error(handle)
+    }
+}
+pub fn native_reconstruction_record(handle: usize, frame: usize, source: usize, output: usize, values: Vec[f32]) -> bool {
+    unsafe {
+        ret encore_vk_reconstruction_record(handle, frame, source, output, values.as_ptr(), values.len())
+    }
+}
+pub fn native_reconstruction_destroy(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_reconstruction_destroy(handle)
+    }
+}
+
+extern fn encore_vk_reconstruction_resolution(device: usize, method: u32, width: u32, height: u32, quality: u32) -> u64
+pub fn native_reconstruction_resolution(device: usize, method: u32, width: u32, height: u32, quality: u32) -> u64 {
+    unsafe {
+        ret encore_vk_reconstruction_resolution(device, method, width, height, quality)
+    }
+}
+extern fn encore_vk_texture_image(texture: usize) -> usize
+pub fn native_texture_image(texture: usize) -> usize {
+    unsafe {
+        ret encore_vk_texture_image(texture)
+    }
+}
+
+pub import mod::presentation_schedule::PresentationSchedule
+extern fn encore_vk_reconstruction_record_images(handle: usize, frame: usize, source: usize, output: usize, color: usize, reactive: usize, composition: usize, values: f32*, count: usize) -> bool
+pub fn native_reconstruction_record_images(handle: usize, frame: usize, source: usize, output: usize, color: usize, reactive: usize, composition: usize, values: Vec[f32]) -> bool {
+    unsafe {
+        ret encore_vk_reconstruction_record_images(handle, frame, source, output, color, reactive, composition, values.as_ptr(), values.len())
+    }
+}
+extern fn encore_vk_presentation_yield() ->()
+pub fn native_presentation_yield() ->() {
+    unsafe {
+        encore_vk_presentation_yield()
+    }
+}

@@ -1,0 +1,55 @@
+//! Bounded display cadence, independent of application simulation and GPU work.
+pub struct PresentationSchedule {
+    count: u32
+    index: u32
+    interval_ns: u64
+    deadline_ns: u64
+    started_ns: u64
+}
+
+impl for PresentationSchedule {
+    pub fn new() -> PresentationSchedule<H> {
+        ret PresentationSchedule<H>{ 0, 0, 0, 0, 0 }
+    }
+    pub fn begin(self: mut Self&, count: u32, interval_ns: u64, now_ns: u64) ->() {
+        self.count = if count >= 2 && count <= 4 {
+            count
+        } else {
+            0
+        }
+        self.index = 0 self.interval_ns = if interval_ns < 500000_u64 {
+            500000_u64
+        } elif interval_ns > 16666667_u64 {
+            16666667_u64
+        } else {
+            interval_ns
+        }
+        self.deadline_ns = now_ns self.started_ns = now_ns
+    }
+    pub fn pending(self: Self&) -> bool {
+        ret self.index < self.count
+    }
+    pub fn index(self: Self&) -> u32 {
+        ret self.index
+    }
+    pub fn due(self: Self&, now_ns: u64) -> bool {
+        ret self.pending() && now_ns >= self.deadline_ns
+    }
+    pub fn expired(self: Self&, now_ns: u64) -> bool {
+        ret self.pending() && now_ns >= self.started_ns && now_ns - self.started_ns > 100000000_u64
+    }
+    pub fn submitted(self: mut Self&, now_ns: u64) ->() {
+        if !self.pending() {
+            ret()
+        }
+        self.index += 1
+        self.deadline_ns = if now_ns > self.deadline_ns {
+            now_ns + self.interval_ns
+        } else {
+            self.deadline_ns + self.interval_ns
+        }
+    }
+    pub fn cancel(self: mut Self&) ->() {
+        self.count = 0 self.index = 0
+    }
+}

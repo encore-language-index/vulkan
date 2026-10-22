@@ -1,0 +1,14 @@
+[project]
+name = "vulkan"
+version = "0.1.1"
+description = "Standalone Vulkan resources, commands and presentation surfaces"
+repository = "https://github.com/encore-ecosystem/Luma"
+encore = ">=0.1.6"
+readme = "README.md"
+licence = "MIT"
+dependencies = [
+    "sys@core",
+]
+
+[publish]
+exclude = ["examples/offscreen/target/**", "examples/offscreen/.encore_cache/**", "examples/offscreen/.cache/**", "examples/offscreen/encore.lock"]
