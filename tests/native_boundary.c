@@ -35,6 +35,25 @@ int main(void) {
     assert(mapped && mapped[63] == 42);
     encore_vk_buffer_unmap(buffer);
     assert(encore_vk_buffer_destroy(buffer));
+    /* Single-channel data uploads use their actual texel size. */
+    for (int sample_bytes = 1; sample_bytes <= 2; ++sample_bytes) {
+        size_t samples = encore_vk_buffer_create(device, 4 * sample_bytes, 1, true);
+        assert(encore_vk_buffer_available(samples));
+        void *data = encore_vk_buffer_map(samples, 4 * sample_bytes);
+        assert(data); memset(data, 127, 4 * sample_bytes);
+        encore_vk_buffer_unmap(samples);
+        size_t image = encore_vk_texture_create(device, 2, 2, 1,
+            sample_bytes == 1 ? 9 : 70, 6);
+        size_t upload = encore_vk_encoder_create(device);
+        assert(encore_vk_texture_available(image));
+        assert(encore_vk_encoder_transition_texture(upload, image, 7));
+        assert(encore_vk_encoder_copy_buffer_to_texture(upload, samples, image, 2, 2, 0));
+        assert(encore_vk_encoder_transition_texture(upload, image, 5));
+        assert(encore_vk_encoder_submit_wait(upload));
+        assert(encore_vk_encoder_destroy(upload));
+        assert(encore_vk_texture_destroy(image));
+        assert(encore_vk_buffer_destroy(samples));
+    }
     size_t target = encore_vk_offscreen_create(device, 32, 32);
     assert(encore_vk_swapchain_available(target));
     assert(encore_vk_swapchain_device(target) == device);

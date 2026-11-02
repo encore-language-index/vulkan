@@ -1383,7 +1383,8 @@ size_t encore_vk_scene_bind_group_create(size_t device_handle, size_t layout_han
     return (size_t)result;
 }
 
-size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, size_t vertex_handle, size_t fragment_handle,
+static atomic_uint_fast64_t encore_graphics_pipeline_identity = 1;
+static size_t encore_vk_pipeline_create_internal(size_t secondary_layout_handle, size_t device_handle, size_t swapchain_handle, size_t vertex_handle, size_t fragment_handle,
     size_t bind_group_layout_handle, bool requested_depth_attachment,
     bool depth_test, bool depth_write, uint32_t cull_mode, bool alpha_blend,
     bool additive_blend, bool load_color,
@@ -1396,6 +1397,7 @@ size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, 
     EncoreVkShader *vertex = (EncoreVkShader *)vertex_handle;
     EncoreVkShader *fragment = (EncoreVkShader *)fragment_handle;
     EncoreVkBindGroupLayout *bind_group_layout = (EncoreVkBindGroupLayout *)bind_group_layout_handle;
+    EncoreVkBindGroupLayout *secondary = (EncoreVkBindGroupLayout *)secondary_layout_handle;
     EncoreVkPipeline *result = (EncoreVkPipeline *)calloc(1, sizeof(EncoreVkPipeline));
     if (result == NULL) return 0;
     result->owner = device;
@@ -1408,6 +1410,7 @@ size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, 
             (device->enabled_features & ENCORE_GPU_FEATURE_MESH_SHADER) == 0) ||
         fragment->stage != VK_SHADER_STAGE_FRAGMENT_BIT ||
         (bind_group_layout != NULL && (!bind_group_layout->available || bind_group_layout->owner != device)) ||
+        (secondary && (!bind_group_layout || !secondary->available || secondary->owner != device)) ||
         location_count != format_count ||
         location_count != offset_count || location_count > 16 || (location_count > 0 && vertex_stride == 0) ||
         (cull_mode != VK_CULL_MODE_NONE && cull_mode != VK_CULL_MODE_FRONT_BIT && cull_mode != VK_CULL_MODE_BACK_BIT)) {
@@ -1453,13 +1456,14 @@ size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, 
     if (create_render_pass(device->device, &render_pass_info, NULL, &result->render_pass) != VK_SUCCESS) {
         strncpy(result->error, "Unable to create render pipeline pass", sizeof(result->error) - 1); return (size_t)result;
     }
-    void *descriptor_layout = bind_group_layout == NULL ? NULL : bind_group_layout->layout;
+    void *descriptor_layouts[2] = {bind_group_layout ? bind_group_layout->layout : NULL, secondary ? secondary->layout : NULL};
+    result->secondary_descriptor_layout = descriptor_layouts[1];
     /* Vulkan guarantees at least 128 bytes. A common graphics range keeps
        pipeline switches compatible without coupling this API to a UI. */
     VkPushConstantRange constants = {
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 128};
     VkPipelineLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, NULL, 0,
-        bind_group_layout == NULL ? 0 : 1, bind_group_layout == NULL ? NULL : &descriptor_layout, 1, &constants};
+        bind_group_layout == NULL ? 0 : (secondary ? 2 : 1), bind_group_layout == NULL ? NULL : descriptor_layouts, 1, &constants};
     if (create_layout(device->device, &layout_info, NULL, &result->layout) != VK_SUCCESS) {
         strncpy(result->error, "Unable to create render pipeline layout", sizeof(result->error) - 1); return (size_t)result;
     }
@@ -1516,6 +1520,7 @@ size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, 
         snprintf(result->error, sizeof(result->error), "Unable to create Vulkan render pipeline (result %d)", status);
         return (size_t)result;
     }
+    result->identity = atomic_fetch_add_explicit(&encore_graphics_pipeline_identity, 1, memory_order_relaxed);
     result->format = swapchain->format;
     result->samples = samples;
     result->auxiliary_format = swapchain->auxiliary_format;
@@ -1524,6 +1529,29 @@ size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, 
     return (size_t)result;
 }
 
+size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, size_t vertex_handle, size_t fragment_handle,
+    size_t bind_group_layout_handle, bool requested_depth_attachment,
+    bool depth_test, bool depth_write, uint32_t cull_mode, bool alpha_blend,
+    bool additive_blend, bool load_color,
+    uint32_t vertex_stride,
+    const uint32_t *locations, size_t location_count,
+    const uint32_t *formats, size_t format_count,
+    const uint32_t *offsets, size_t offset_count) {
+    return encore_vk_pipeline_create_internal(0, device_handle, swapchain_handle, vertex_handle, fragment_handle, bind_group_layout_handle, requested_depth_attachment, depth_test, depth_write, cull_mode, alpha_blend, additive_blend, load_color, vertex_stride, locations, location_count, formats, format_count, offsets, offset_count);
+}
+
+size_t encore_vk_pipeline_create_two_sets(size_t secondary_layout_handle, size_t device_handle, size_t swapchain_handle, size_t vertex_handle, size_t fragment_handle,
+    size_t bind_group_layout_handle, bool requested_depth_attachment,
+    bool depth_test, bool depth_write, uint32_t cull_mode, bool alpha_blend,
+    bool additive_blend, bool load_color,
+    uint32_t vertex_stride,
+    const uint32_t *locations, size_t location_count,
+    const uint32_t *formats, size_t format_count,
+    const uint32_t *offsets, size_t offset_count) {
+    return encore_vk_pipeline_create_internal(secondary_layout_handle, device_handle, swapchain_handle, vertex_handle, fragment_handle, bind_group_layout_handle, requested_depth_attachment, depth_test, depth_write, cull_mode, alpha_blend, additive_blend, load_color, vertex_stride, locations, location_count, formats, format_count, offsets, offset_count);
+}
+
+uint64_t encore_vk_pipeline_identity(size_t handle) { EncoreVkPipeline *p=(EncoreVkPipeline *)handle; return p && p->available ? p->identity : 0; }
 bool encore_vk_pipeline_available(size_t handle) { EncoreVkPipeline *p = (EncoreVkPipeline *)handle; return p != NULL && p->available; }
 encore_str encore_vk_pipeline_error(size_t handle) { EncoreVkPipeline *p = (EncoreVkPipeline *)handle; return encore_string(p == NULL ? "Invalid render pipeline" : p->error); }
 bool encore_vk_pipeline_destroy(size_t handle) {

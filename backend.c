@@ -977,6 +977,8 @@ typedef struct {
     PFN_vkDestroyRenderPass destroy_render_pass;
     PFN_vkDestroyPipelineLayout destroy_pipeline_layout;
     PFN_vkDestroyPipeline destroy_pipeline;
+    uint64_t identity;
+    void *secondary_descriptor_layout;
     bool depth_test;
     bool depth_attachment;
     bool available;
@@ -1010,6 +1012,8 @@ typedef struct {
 typedef struct {
     EncoreVkDevice *owner;
     EncoreVkBuffer *backing;
+    EncoreVkBuffer *build_scratch, *build_inputs;
+    size_t build_completion;
     void *acceleration_structure;
     uint64_t device_address;
     uint32_t type;
@@ -1148,5 +1152,6 @@ static bool encore_parallel_frame_pending(EncoreVkDevice *, uint64_t);
 #include "completion.inc"
 #include "presentation.inc"
 #include "resources.inc"
+#include "acceleration_frames.inc"
 #include "interop.inc"
 #include "reconstruction.inc"

@@ -1013,6 +1013,20 @@ bool encore_vk_frame_bind_group(size_t frame_handle, size_t bind_group_handle) {
     return true;
 }
 
+/* The caller owns descriptor/resource lifetime until the frame completion. */
+bool encore_vk_frame_bind_group_at(size_t frame_handle, uint32_t index, size_t bind_group_handle) {
+    if (index == 0) return encore_vk_frame_bind_group(frame_handle, bind_group_handle);
+    EncoreVkFrame *frame = (EncoreVkFrame *)frame_handle;
+    EncoreVkBindGroup *group = (EncoreVkBindGroup *)bind_group_handle;
+    if (index != 1 || !frame || !frame->recording || !frame->in_render_pass || !frame->pipeline ||
+        !group || !group->available || group->owner != frame->owner->owner || !group->layout ||
+        !frame->pipeline->secondary_descriptor_layout ||
+        group->layout->layout != frame->pipeline->secondary_descriptor_layout) return false;
+    frame->owner->cmd_bind_descriptor_sets(frame->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        frame->pipeline->layout, index, 1, &group->set, 0, NULL);
+    return true;
+}
+
 bool encore_vk_frame_bind_pipeline(size_t frame_handle, size_t pipeline_handle) {
     EncoreVkFrame *frame = (EncoreVkFrame *)frame_handle;
     EncoreVkPipeline *pipeline = (EncoreVkPipeline *)pipeline_handle;

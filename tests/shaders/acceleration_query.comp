@@ -1,0 +1,16 @@
+#version 460
+#extension GL_EXT_ray_query : require
+layout(local_size_x=1) in;
+layout(set=0,binding=0) uniform accelerationStructureEXT scene;
+layout(set=0,binding=1,std430) buffer Results {uint data[];} results;
+void main() {
+    uint i=gl_GlobalInvocationID.x;
+    vec3 origin=i==1u?vec3(2,2,1):i==2u?vec3(.25,.25,-1):vec3(.25,.25,1);
+    vec3 direction=i==2u?vec3(0,0,1):vec3(0,0,-1);
+    rayQueryEXT q;
+    rayQueryInitializeEXT(q,scene,gl_RayFlagsOpaqueEXT,255u,origin,.001,direction,10.);
+    while(rayQueryProceedEXT(q)){}
+    bool hit=rayQueryGetIntersectionTypeEXT(q,true)==gl_RayQueryCommittedIntersectionTriangleEXT;
+    results.data[i*2u]=hit?1u:0u;
+    results.data[i*2u+1u]=hit?floatBitsToUint(rayQueryGetIntersectionTEXT(q,true)):0u;
+}

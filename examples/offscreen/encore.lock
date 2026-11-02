@@ -1,0 +1,14 @@
+version = 2
+
+[[packages]]
+name = "vulkan"
+ref = "index@vulkan@>=0.1.0"
+version = "0.1.1"
+archive = "http://127.0.0.1:8137/archives/db116f49be56e729ae425168790e5b9ff02d04ac446048b01448a7d6ac84f175.tar.gz"
+checksum = "db116f49be56e729ae425168790e5b9ff02d04ac446048b01448a7d6ac84f175"
+registry = "http://127.0.0.1:8137/index"
+
+[[packages]]
+name = "core"
+ref = "sys@core"
+version = "0.0.0"

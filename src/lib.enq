@@ -137,6 +137,7 @@ extern fn encore_vk_buffer_textures_bind_group_create_many(device: usize, layout
     offsets: u64*, offset_count: usize, ranges: u64*, range_count: usize,
     texture_bindings: u32*, texture_binding_count: usize,
     textures: usize*, texture_count: usize, samplers: usize*, sampler_count: usize,) -> usize
+
 extern fn encore_vk_bind_group_available(handle: usize) -> bool
 extern fn encore_vk_bind_group_error(handle: usize) -> str
 extern fn encore_vk_bind_group_destroy(handle: usize) -> bool
@@ -155,6 +156,16 @@ extern fn encore_vk_scene_bind_group_create(device: usize, layout: usize,
     uniform_binding: u32, uniform_buffer: usize, uniform_range: u64,
     storage_binding: u32, storage_buffer: usize, storage_range: u64,) -> usize
 extern fn encore_vk_pipeline_create(device: usize, swapchain: usize, vertex: usize, fragment: usize,
+    bind_group_layout: usize, depth_attachment: bool,
+    depth_test: bool, depth_write: bool,
+    cull_mode: u32, alpha_blend: bool,
+    additive_blend: bool,
+    load_color: bool,
+    vertex_stride: u32,
+    locations: u32*, location_count: usize,
+    formats: u32*, format_count: usize,
+    offsets: u32*, offset_count: usize,) -> usize
+extern fn encore_vk_pipeline_create_two_sets(secondary_layout: usize, device: usize, swapchain: usize, vertex: usize, fragment: usize,
     bind_group_layout: usize, depth_attachment: bool,
     depth_test: bool, depth_write: bool,
     cull_mode: u32, alpha_blend: bool,
@@ -597,6 +608,7 @@ pub fn native_buffer_textures_bind_group_create_many(device: usize, layout: usiz
             textures.as_ptr(), textures.len(), samplers.as_ptr(), samplers.len(),)
     }
 }
+
 pub fn native_scene_bind_group_create(device: usize, layout: usize,
     uniform_binding: u32, uniform_buffer: usize, uniform_range: u64,
     storage_binding: u32, storage_buffer: usize, storage_range: u64,) -> usize {
@@ -702,6 +714,26 @@ pub fn native_pipeline_create_configured(
     offsets: Vec[u32],) -> usize {
     unsafe {
         ret encore_vk_pipeline_create(
+            device, swapchain, vertex, fragment, bind_group_layout,
+            depth_attachment, depth_test, depth_write,
+            cull_mode, alpha_blend, additive_blend, load_color,
+            vertex_stride,
+            locations.as_ptr(), locations.len(),
+            formats.as_ptr(), formats.len(),
+            offsets.as_ptr(), offsets.len(),)
+    }
+}
+
+pub fn native_pipeline_create_two_sets(secondary_layout: usize,
+    device: usize, swapchain: usize, vertex: usize, fragment: usize,
+    bind_group_layout: usize, depth_attachment: bool,
+    depth_test: bool, depth_write: bool,
+    cull_mode: u32, alpha_blend: bool, additive_blend: bool,
+    load_color: bool,
+    vertex_stride: u32, locations: Vec[u32], formats: Vec[u32],
+    offsets: Vec[u32],) -> usize {
+    unsafe {
+        ret encore_vk_pipeline_create_two_sets(secondary_layout,
             device, swapchain, vertex, fragment, bind_group_layout,
             depth_attachment, depth_test, depth_write,
             cull_mode, alpha_blend, additive_blend, load_color,
@@ -1507,5 +1539,50 @@ extern fn encore_vk_presentation_yield() ->()
 pub fn native_presentation_yield() ->() {
     unsafe {
         encore_vk_presentation_yield()
+    }
+}
+
+// Frame-owned builds preserve the command queue's submission order. Memory
+// queries include transient build inputs and scratch until the producer retires.
+extern fn encore_vk_frame_build_triangle_blas(frame: usize, vertices: usize, stride: u64, vertex_count: u32, indices: usize, index_count: u32, byte_limit: u64) -> usize
+extern fn encore_vk_frame_build_tlas(frame: usize, structures: usize*, count: usize, transforms: f32*, float_count: usize, byte_limit: u64) -> usize
+extern fn encore_vk_acceleration_structure_memory_bytes(handle: usize) -> u64
+extern fn encore_vk_acceleration_structure_release_build_resources(handle: usize) -> bool
+#attr(safe)
+pub fn native_frame_build_triangle_blas(frame: usize, vertices: usize, stride: u64, vertex_count: u32, indices: usize, index_count: u32, byte_limit: u64) -> usize {
+    unsafe {
+        ret encore_vk_frame_build_triangle_blas(frame, vertices, stride, vertex_count, indices, index_count, byte_limit)
+    }
+}
+#attr(safe)
+pub fn native_frame_build_tlas(frame: usize, structures: Vec[usize], transforms: Vec[f32], byte_limit: u64) -> usize {
+    unsafe {
+        ret encore_vk_frame_build_tlas(frame, structures.as_ptr(), structures.len(), transforms.as_ptr(), transforms.len(), byte_limit)
+    }
+}
+#attr(safe)
+pub fn native_acceleration_structure_memory_bytes(handle: usize) -> u64 {
+    unsafe {
+        ret encore_vk_acceleration_structure_memory_bytes(handle)
+    }
+}
+#attr(safe)
+pub fn native_acceleration_structure_release_build_resources(handle: usize) -> bool {
+    unsafe {
+        ret encore_vk_acceleration_structure_release_build_resources(handle)
+    }
+}
+
+extern fn encore_vk_frame_bind_group_at(frame: usize, index: u32, group: usize) -> bool
+pub fn native_frame_bind_group_at(frame: usize, index: u32, group: usize) -> bool {
+    unsafe {
+        ret encore_vk_frame_bind_group_at(frame, index, group)
+    }
+}
+
+extern fn encore_vk_pipeline_identity(handle: usize) -> u64
+pub fn native_pipeline_identity(handle: usize) -> u64 {
+    unsafe {
+        ret encore_vk_pipeline_identity(handle)
     }
 }

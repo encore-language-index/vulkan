@@ -613,6 +613,25 @@ size_t encore_vk_tlas_create_instances(size_t device_handle,
     return (size_t)result;
 }
 
+/* Build storage is retained until the actual producer retires, including
+ * rejected/unsubmitted frames. Opaque AS handles do not borrow frame wrappers. */
+uint64_t encore_vk_acceleration_structure_memory_bytes(size_t handle) {
+    EncoreVkAccelerationStructure *s=(EncoreVkAccelerationStructure *)handle;
+    if(!s)return 0;
+    return (s->backing?s->backing->size:0)+(s->build_scratch?s->build_scratch->size:0)+(s->build_inputs?s->build_inputs->size:0);
+}
+bool encore_vk_acceleration_structure_release_build_resources(size_t handle) {
+    EncoreVkAccelerationStructure *s=(EncoreVkAccelerationStructure *)handle;if(!s)return false;
+    if(s->build_completion) {
+        uint32_t status=encore_vk_completion_status(s->build_completion);
+        if(status!=2 && status!=3)return false;
+        if(status==3)s->available=false;
+        encore_vk_completion_destroy(s->build_completion);s->build_completion=0;
+    }
+    if(s->build_scratch)encore_vk_buffer_destroy((size_t)s->build_scratch);
+    if(s->build_inputs)encore_vk_buffer_destroy((size_t)s->build_inputs);
+    s->build_scratch=NULL;s->build_inputs=NULL;return true;
+}
 bool encore_vk_acceleration_structure_available(size_t handle) {
     EncoreVkAccelerationStructure *structure =
         (EncoreVkAccelerationStructure *)handle;
@@ -630,6 +649,7 @@ bool encore_vk_acceleration_structure_destroy(size_t handle) {
     EncoreVkAccelerationStructure *structure =
         (EncoreVkAccelerationStructure *)handle;
     if (structure == NULL) return false;
+    if(!encore_vk_acceleration_structure_release_build_resources(handle))return false;
     if (structure->acceleration_structure != NULL &&
         structure->owner != NULL && structure->owner->device != NULL &&
         structure->destroy_acceleration_structure != NULL)
@@ -765,7 +785,9 @@ bool encore_vk_encoder_copy_buffer_to_texture_region(size_t encoder_handle,
         x > texture->width || width > texture->width - x ||
         y > texture->height || height > texture->height - y ||
         mip_level >= texture->mip_levels ||
-        buffer->size < (uint64_t)width * (uint64_t)height * (texture->format == 109u ? 16u : texture->format == 97u ? 8u : 4u)) return false;
+        buffer->size < (uint64_t)width * (uint64_t)height *
+            (texture->format == 109u ? 16u : texture->format == 97u ? 8u :
+             texture->format == 70u ? 2u : texture->format == 9u ? 1u : 4u)) return false;
     VkBufferImageCopy region = {
         0, 0, 0, {texture->aspect, mip_level, 0, 1},
         {(int32_t)x, (int32_t)y, 0}, {width, height, 1}

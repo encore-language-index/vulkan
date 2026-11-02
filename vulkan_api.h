@@ -313,6 +313,7 @@ size_t encore_vk_buffer_textures_bind_group_create_many(size_t device_handle,
     const uint32_t *texture_bindings, size_t texture_binding_count,
     const size_t *texture_handles, size_t texture_count,
     const size_t *sampler_handles, size_t sampler_count);
+
 size_t encore_vk_ray_query_bind_group_create(size_t device_handle,
     size_t layout_handle, uint32_t acceleration_binding,
     size_t acceleration_handle,
@@ -350,6 +351,16 @@ size_t encore_vk_pipeline_create(size_t device_handle, size_t swapchain_handle, 
     const uint32_t *locations, size_t location_count,
     const uint32_t *formats, size_t format_count,
     const uint32_t *offsets, size_t offset_count);
+size_t encore_vk_pipeline_create_two_sets(size_t secondary_layout_handle, size_t device_handle, size_t swapchain_handle, size_t vertex_handle, size_t fragment_handle,
+    size_t bind_group_layout_handle, bool requested_depth_attachment,
+    bool depth_test, bool depth_write, uint32_t cull_mode, bool alpha_blend,
+    bool additive_blend, bool load_color,
+    uint32_t vertex_stride,
+    const uint32_t *locations, size_t location_count,
+    const uint32_t *formats, size_t format_count,
+    const uint32_t *offsets, size_t offset_count);
+/* Stable creation identity, safe as a cache key across recycled host addresses. */
+uint64_t encore_vk_pipeline_identity(size_t handle);
 bool encore_vk_pipeline_available(size_t handle);
 encore_str encore_vk_pipeline_error(size_t handle);
 bool encore_vk_pipeline_destroy(size_t handle);
@@ -383,6 +394,7 @@ bool encore_vk_frame_copy_buffer(size_t frame_handle,
 bool encore_vk_frame_begin_render_pass(size_t frame_handle, size_t pipeline_handle,
     float red, float green, float blue, float alpha);
 bool encore_vk_frame_bind_group(size_t frame_handle, size_t bind_group_handle);
+bool encore_vk_frame_bind_group_at(size_t frame_handle, uint32_t index, size_t bind_group_handle);
 bool encore_vk_frame_bind_pipeline(size_t frame_handle, size_t pipeline_handle);
 bool encore_vk_frame_bind_vertex_buffer(size_t frame_handle, size_t buffer_handle);
 bool encore_vk_frame_bind_index_buffer(size_t frame_handle, size_t buffer_handle);
@@ -457,6 +469,13 @@ uint32_t encore_vk_buffer_read_u32(size_t handle, uint64_t offset);
 float encore_vk_buffer_read_f32(size_t handle, uint64_t offset);
 bool encore_vk_buffer_read_f32s(size_t handle, uint64_t offset, float *values, size_t count);
 bool encore_vk_buffer_destroy(size_t handle);
+/* Record builds into an owned frame. byte_limit includes storage, scratch and
+ * native instance inputs. AS/input lifetime is protected by the build token;
+ * consumers must also retire before destroying the AS. */
+size_t encore_vk_frame_build_triangle_blas(size_t frame,size_t vertices,uint64_t stride,uint32_t vertex_count,size_t indices,uint32_t index_count,uint64_t byte_limit);
+size_t encore_vk_frame_build_tlas(size_t frame,const size_t *structures,size_t count,const float *transforms,size_t float_count,uint64_t byte_limit);
+uint64_t encore_vk_acceleration_structure_memory_bytes(size_t handle);
+bool encore_vk_acceleration_structure_release_build_resources(size_t handle);
 size_t encore_vk_blas_create_triangles(size_t device_handle,
     size_t vertex_handle, uint64_t vertex_stride, uint32_t vertex_count,
     size_t index_handle, uint32_t index_count);
